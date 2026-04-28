@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeatSense – Live Feed</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1117;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-icon {
+            width: 42px; height: 42px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+
+        .logo-text h1 { font-size: 1.3em; font-weight: 700; color: #fff; }
+        .logo-text p  { font-size: 0.8em;  color: rgba(255,255,255,0.75); }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .live-badge {
+            display: flex; align-items: center; gap: 7px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 6px 14px; border-radius: 50px;
+            font-size: 0.85em; color: #fff; font-weight: 600;
+        }
+
+        .live-dot {
+            width: 8px; height: 8px;
+            background: #4ade80; border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50%      { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .back-btn {
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff; padding: 7px 16px;
+            border-radius: 8px; font-size: 0.85em;
+            cursor: pointer; text-decoration: none;
+            transition: background 0.2s;
+        }
+        .back-btn:hover { background: rgba(255,255,255,0.28); }
+
+        /* ── Main layout ── */
+        .container { padding: 24px 28px; }
+
+        .page-title {
+            font-size: 1.0em; color: #94a3b8;
+            margin-bottom: 20px; letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* ── Camera grid ── */
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 1000px) {
+            .camera-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 640px) {
+            .camera-grid { grid-template-columns: 1fr; }
+        }
+
+        .camera-card {
+            background: #1e2130;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #2d3348;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .camera-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+        }
+
+        .camera-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #2d3348;
+            background: #161827;
+        }
+
+        .camera-name {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.95em; font-weight: 600; color: #e2e8f0;
+        }
+
+        .cam-dot {
+            width: 7px; height: 7px;
+            background: #4ade80; border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .camera-campus {
+            font-size: 0.72em; color: #64748b;
+            background: #252840; padding: 3px 9px;
+            border-radius: 20px;
+        }
+
+        /* ── Video frame ── */
+        .video-wrapper {
+            position: relative;
+            background: #0a0c14;
+            aspect-ratio: 16/9;
+            overflow: hidden;
+        }
+
+        .video-wrapper img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .loading-overlay {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 12px; background: #0a0c14;
+        }
+
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid #2d3348;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text { font-size: 0.8em; color: #64748b; }
+
+        /* ── Stats bar ── */
+        .camera-stats {
+            padding: 10px 16px;
+            display: flex;
+            gap: 20px;
+            background: #161827;
+            border-top: 1px solid #2d3348;
+        }
+
+        .stat-item {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.82em;
+        }
+
+        .stat-dot-avail { width: 8px; height: 8px; background: #4ade80; border-radius: 50%; }
+        .stat-dot-occ   { width: 8px; height: 8px; background: #f87171; border-radius: 50%; }
+
+        .stat-label { color: #64748b; }
+        .stat-value { font-weight: 600; color: #e2e8f0; }
+
+        /* ── Note bar at bottom ── */
+        .note-bar {
+            margin-top: 24px;
+            background: #1e2130;
+            border: 1px solid #2d3348;
+            border-radius: 12px;
+            padding: 14px 20px;
+            display: flex; align-items: center; gap: 12px;
+            font-size: 0.85em; color: #94a3b8;
+        }
+
+        .note-bar span { font-size: 1.2em; }
+
+        .legend {
+            display: flex; gap: 20px; margin-left: auto;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.82em; color: #94a3b8;
+        }
+
+        .legend-box {
+            width: 14px; height: 14px; border-radius: 3px;
+        }
+        .legend-box.avail { background: #4ade80; }
+        .legend-box.occ   { background: #f87171; }
+        .legend-box.person { background: #60a5fa; }
+        .legend-box.object { background: #fde047; }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-icon">📡</div>
+            <div class="logo-text">
+                <h1>SeatSense</h1>
+                <p>PSB Academy Library System</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="live-badge">
+                <div class="live-dot"></div>
+                LIVE FEED
+            </div>
+            <a href="/" class="back-btn">← Dashboard</a>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <div class="container">
+        <div class="page-title">📹 Real-Time Camera Feeds</div>
+
+        <div class="camera-grid">
+
+            <!-- Camera 1 -->
+            <div class="camera-card">
+                <div class="camera-header">
+                    <div class="camera-name">
+                        <div class="cam-dot"></div>
+                        Camera 1
+                    </div>
+                    <span class="camera-campus">Main Wing · STEM Wing</span>
+                </div>
+                <div class="video-wrapper" id="wrapper-cam1">
+                    <div class="loading-overlay" id="loading-cam1">
+                        <div class="spinner"></div>
+                        <div class="loading-text">Connecting...</div>
+                    </div>
+                    <img src="/video_feed/cam1" alt="Camera 1"
+                         onload="hideLoading('cam1')"
+                         onerror="showError('cam1')">
+                </div>
+                <div class="camera-stats" id="stats-cam1">
+                    <div class="stat-item">
+                        <div class="stat-dot-avail"></div>
+                        <span class="stat-label">Available</span>
+                        <span class="stat-value" id="avail-cam1">—</span>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-dot-occ"></div>
+                        <span class="stat-label">Occupied</span>
+                        <span class="stat-value" id="occ-cam1">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera 2 -->
+            <div class="camera-card">
+                <div class="camera-header">
+                    <div class="camera-name">
+                        <div class="cam-dot"></div>
+                        Camera 2
+                    </div>
+                    <span class="camera-campus">STEM Wing · Cathay</span>
+                </div>
+                <div class="video-wrapper" id="wrapper-cam2">
+                    <div class="loading-overlay" id="loading-cam2">
+                        <div class="spinner"></div>
+                        <div class="loading-text">Connecting...</div>
+                    </div>
+                    <img src="/video_feed/cam2" alt="Camera 2"
+                         onload="hideLoading('cam2')"
+                         onerror="showError('cam2')">
+                </div>
+                <div class="camera-stats" id="stats-cam2">
+                    <div class="stat-item">
+                        <div class="stat-dot-avail"></div>
+                        <span class="stat-label">Available</span>
+                        <span class="stat-value" id="avail-cam2">—</span>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-dot-occ"></div>
+                        <span class="stat-label">Occupied</span>
+                        <span class="stat-value" id="occ-cam2">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Camera 3 -->
+            <div class="camera-card">
+                <div class="camera-header">
+                    <div class="camera-name">
+                        <div class="cam-dot"></div>
+                        Camera 3
+                    </div>
+                    <span class="camera-campus">Main Wing · STEM Wing · Cathay</span>
+                </div>
+                <div class="video-wrapper" id="wrapper-cam3">
+                    <div class="loading-overlay" id="loading-cam3">
+                        <div class="spinner"></div>
+                        <div class="loading-text">Connecting...</div>
+                    </div>
+                    <img src="/video_feed/cam3" alt="Camera 3"
+                         onload="hideLoading('cam3')"
+                         onerror="showError('cam3')">
+                </div>
+                <div class="camera-stats" id="stats-cam3">
+                    <div class="stat-item">
+                        <div class="stat-dot-avail"></div>
+                        <span class="stat-label">Available</span>
+                        <span class="stat-value" id="avail-cam3">—</span>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-dot-occ"></div>
+                        <span class="stat-label">Occupied</span>
+                        <span class="stat-value" id="occ-cam3">—</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Legend / note -->
+        <div class="note-bar">
+            <span>ℹ️</span>
+            <span>Frames are processed every 3rd frame with YOLO11 detection. Face blur applied for privacy.</span>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-box avail"></div> Available seat</div>
+                <div class="legend-item"><div class="legend-box occ"></div> Occupied seat</div>
+                <div class="legend-item"><div class="legend-box person"></div> Person</div>
+                <div class="legend-item"><div class="legend-box object"></div> Object (laptop / bag)</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function hideLoading(camId) {
+            const el = document.getElementById('loading-' + camId);
+            if (el) el.style.display = 'none';
+        }
+
+        function showError(camId) {
+            const el = document.getElementById('loading-' + camId);
+            if (el) {
+                el.innerHTML = '<span style="font-size:2em">📷</span>'
+                             + '<div class="loading-text" style="color:#f87171">Feed unavailable</div>';
+            }
+        }
+
+        // Poll seat stats from API and update stat bars
+        async function refreshStats() {
+            try {
+                const res  = await fetch('/api/seats');
+                const data = await res.json();
+
+                ['cam1', 'cam2', 'cam3'].forEach(camId => {
+                    if (!data[camId]) return;
+                    const seats = data[camId].seats;
+                    const avail = Object.values(seats).filter(s => s === 'Available').length;
+                    const occ   = Object.values(seats).filter(s => s === 'Occupied').length;
+
+                    const aEl = document.getElementById('avail-' + camId);
+                    const oEl = document.getElementById('occ-'   + camId);
+                    if (aEl) aEl.textContent = avail;
+                    if (oEl) oEl.textContent = occ;
+                });
+            } catch (e) {
+                console.warn('Stats fetch failed:', e);
+            }
+        }
+
+        refreshStats();
+        setInterval(refreshStats, 2000);
+    </script>
+</body>
+</html>

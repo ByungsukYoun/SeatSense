@@ -1,0 +1,2467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <title>SeatSense</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 25px 30px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .logo-text h1 {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .logo-text p {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #e8f5e9;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.9em;
+            color: #2e7d32;
+        }
+        
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #4CAF50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        
+        /* Main Navigation */
+        .main-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .main-nav-btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.3);
+            color: white;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .main-nav-btn:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        
+        .main-nav-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        
+        /* Page Sections */
+        .page-section {
+            display: none;
+        }
+        
+        .page-section.active {
+            display: block;
+        }
+        
+        /* Campus Tabs */
+        .campus-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .campus-tab {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.3);
+            color: white;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .campus-tab:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        
+        .campus-tab.active {
+            background: white;
+            color: #667eea;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value.total { color: #667eea; }
+        .stat-value.available { color: #4CAF50; }
+        .stat-value.occupied { color: #f44336; }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        /* NEW: Progress Bar */
+        .progress-container {
+            margin-top: 12px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-text {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 6px;
+        }
+        
+        /* Floor Plan */
+        .floor-plan {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        /* NEW: Floor Plan Header with Last Updated */
+        .floor-plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .floor-plan-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .last-updated {
+            font-size: 0.8em;
+            color: #999;
+        }
+        
+        /* Grid Layout */
+        .floor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        /* Window - spans full width */
+        .window-area {
+            grid-column: 1 / -1;
+            background: linear-gradient(180deg, #87CEEB, #B0E0E6);
+            height: 20px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            font-weight: 600;
+            color: #1976d2;
+            letter-spacing: 1px;
+        }
+        
+        /* Camera Box */
+        .camera-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .camera-box-title {
+            text-align: center;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .seats-row {
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        
+        /* Lab Room */
+        .lab-room {
+            background: #f0f0f0;
+            border: 3px solid #999;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            min-height: 120px;
+        }
+        
+        .lab-room-title {
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+        }
+        
+        .lab-room-subtitle {
+            font-size: 0.75em;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        /* Table Area (C1) */
+        .table-area {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .table-title {
+            text-align: center;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .table-seats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .table-row {
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+        }
+        
+        .table-surface {
+            background: linear-gradient(180deg, #8B4513, #A0522D);
+            height: 40px;
+            border-radius: 8px;
+            margin: 5px 0;
+            border: 2px solid #5D3A1A;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+        
+        /* Seat */
+        .seat {
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: all 0.3s;
+            cursor: default;
+            position: relative;
+        }
+        
+        .seat.available {
+            background: linear-gradient(135deg, #c8e6c9, #a5d6a7);
+            border: 2px solid #4CAF50;
+            color: #2e7d32;
+        }
+        
+        .seat.occupied {
+            background: linear-gradient(135deg, #ffcdd2, #ef9a9a);
+            border: 2px solid #f44336;
+            color: #c62828;
+        }
+        
+        .seat:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        
+        /* NEW: Tooltip */
+        .seat:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 115%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.7em;
+            font-weight: 400;
+            white-space: nowrap;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .seat:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 105%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: #1f2937;
+            z-index: 100;
+        }
+        
+        .seat-num {
+            font-size: 0.9em;
+            font-weight: 700;
+        }
+        
+        .seat-status {
+            font-size: 0.55em;
+            margin-top: 1px;
+        }
+        
+        /* Legend */
+        .legend {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+        }
+        
+        .legend-color.available {
+            background: #a5d6a7;
+            border: 2px solid #4CAF50;
+        }
+        
+        .legend-color.occupied {
+            background: #ef9a9a;
+            border: 2px solid #f44336;
+        }
+        
+        /* Hidden */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* ==================== Analytics Styles ==================== */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .summary-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .summary-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .summary-label {
+            color: #666;
+            font-size: 0.85em;
+        }
+        
+        .chart-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .chart-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+        
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .insight-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .insight-card h3 {
+            font-size: 1em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .insight-card p {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+        
+        .peak-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        
+        .peak-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+        
+        .peak-rank { font-size: 0.8em; opacity: 0.8; margin-bottom: 5px; }
+        .peak-time { font-size: 1.5em; font-weight: 700; margin-bottom: 5px; }
+        .peak-rate { font-size: 0.85em; opacity: 0.9; }
+        
+        .popularity-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .popularity-table th,
+        .popularity-table td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .popularity-table th {
+            color: #666;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+        
+        .popularity-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .usage-bar-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .usage-bar-bg {
+            width: 100px;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .usage-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 3px;
+        }
+        
+        .camera-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .camera-badge.cam1 { background: #e3f2fd; color: #1976d2; }
+        .camera-badge.cam2 { background: #f3e5f5; color: #7b1fa2; }
+        .camera-badge.cam3 { background: #fce4ec; color: #c2185b; }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255,255,255,0.8);
+            font-size: 0.85em;
+        }
+        
+        /* ==================== NEW: Toast Notifications ==================== */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 350px;
+        }
+        
+        .toast {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 4.7s forwards;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .toast.available {
+            border-left-color: #4CAF50;
+        }
+        
+        .toast.occupied {
+            border-left-color: #f44336;
+        }
+        
+        .toast.error {
+            border-left-color: #ff9800;
+            background: #fff3e0;
+        }
+        
+        .toast-icon {
+            font-size: 1.5em;
+        }
+        
+        .toast-content {
+            flex: 1;
+        }
+        
+        .toast-title {
+            font-weight: 600;
+            font-size: 0.95em;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        
+        .toast-message {
+            font-size: 0.8em;
+            color: #666;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 1.2em;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+        
+        .toast-close:hover {
+            color: #333;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+        
+        /* ==================== NEW: Connection Status ==================== */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        
+        .connection-status.online {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .connection-status.offline {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .connection-status.reconnecting {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.online {
+            background: #4CAF50;
+        }
+        
+        .status-dot.offline {
+            background: #f44336;
+            animation: none;
+        }
+        
+        .status-dot.reconnecting {
+            background: #ff9800;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Camera Error Badge */
+        .camera-error {
+            background: #ffebee !important;
+            border-color: #f44336 !important;
+        }
+        
+        .camera-error .camera-box-title,
+        .camera-error .table-title {
+            color: #c62828 !important;
+        }
+        
+        .error-badge {
+            display: inline-block;
+            background: #f44336;
+            color: white;
+            font-size: 0.7em;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+        
+        /* ==================== STEM Wing Floor Plan ==================== */
+        .stem-floor-plan {
+            background: #e5e5e5;
+            border-radius: 8px;
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1.05 / 1;
+            max-width: 640px;
+            margin: 0 auto 35px auto;
+        }
+        
+        /* Sky blue window */
+        .stem-window { position: absolute; top: 0; left: 0; right: 0; height: 1.5%; background: #87CEEB; }
+        
+        /* Top gray bar - camera3 side */
+        .stem-top-left { position: absolute; top: 1.5%; left: 0; width: 38%; height: 10%; background: #c0c0c0; }
+        
+        /* Top gray bar - camera2 side */
+        .stem-top-right { position: absolute; top: 1.5%; left: 53%; width: 35%; height: 10%; background: #c0c0c0; }
+        
+        /* Right gray area */
+        .stem-right-area { position: absolute; top: 1.5%; right: 0; width: 12%; height: 86.5%; background: #d0d0d0; }
+        
+        /* Camera 3 */
+        .stem-cam3-label { position: absolute; top: 2%; left: 0.5%; font-size: 0.65em; color: #222; background: #c0c0c0; padding: 1px 4px; border: 1px solid #c0c0c0; }
+        .stem-cam3-arrow { position: absolute; top: 4%; left: 18%; font-size: 0.5em; color: #222; }
+        .stem-cam3-seats { position: absolute; top: 6%; left: 1%; display: flex; gap: 4px; }
+        
+        /* PSB logo */
+        .stem-psb { position: absolute; top: 3.5%; left: 42%; color: #dc2626; font-size: 2em; font-weight: bold; }
+        
+        /* Camera 2 */
+        .stem-cam2-arrow { position: absolute; top: 2.5%; left: 57%; font-size: 0.5em; color: #222; }
+        .stem-cam2-label { position: absolute; top: 2%; left: 55%; font-size: 0.65em; color: #222; }
+        .stem-cam2-seats { position: absolute; top: 6%; left: 54%; display: flex; gap: 4px; }
+        .stem-blue-line { display: none; }
+        .stem-cam2-gray { display: none; }
+        
+        /* Right gray seats */
+        .stem-right-seats { position: absolute; top: 12%; right: 7.5%; display: flex; flex-direction: column; gap: 8px; }
+        
+        /* Lounge tables */
+        .stem-lounge { position: absolute; top: 17%; left: 3%; width: 28%; height: 13%; }
+        .stem-round-table { position: absolute; width: 38px; height: 38px; background: repeating-linear-gradient(45deg,#c8c8c8,#c8c8c8 2px,#d8d8d8 2px,#d8d8d8 4px); border-radius: 50%; border: 1px solid #a0a0a0; }
+        .stem-lounge-chair { position: absolute; width: 14px; height: 14px; background: #909090; border-radius: 2px; }
+        
+        /* Lab */
+        .stem-lab { position: absolute; top: 32%; left: 1%; width: 28%; height: 43%; background: #f8f8f8; border: 3px solid #222; border-radius: 16px; }
+        .stem-lab-text { position: absolute; top: 45%; left: 50%; transform: translate(-50%,-50%); font-size: 1.6em; font-weight: bold; color: #222; }
+        .stem-lab-door-r { position: absolute; right: -3px; top: 18%; width: 12px; height: 32px; background: #e5e5e5; border: 3px solid #222; border-right: none; border-radius: 8px 0 0 8px; }
+        .stem-lab-door-b { position: absolute; bottom: -3px; left: 22%; width: 32px; height: 12px; background: #e5e5e5; border: 3px solid #222; border-bottom: none; border-radius: 8px 8px 0 0; }
+        
+        /* Class box */
+        .stem-class { position: absolute; top: 20%; left: 38%; width: 48%; height: 58%; background: #f8f8f8; border: 3px solid #222; border-radius: 16px; }
+        .stem-class-top { position: absolute; top: 6%; left: 50%; transform: translateX(-50%); font-size: 1.5em; font-weight: bold; color: #222; }
+        .stem-class-right { position: absolute; top: 52%; right: 12%; font-size: 1.5em; font-weight: bold; color: #222; }
+        .stem-class-door-t { position: absolute; top: -3px; right: 28%; width: 24px; height: 12px; background: #e5e5e5; border: 3px solid #222; border-top: none; border-radius: 0 0 8px 8px; }
+        .stem-class-door-r { position: absolute; right: -3px; top: 38%; width: 12px; height: 24px; background: #e5e5e5; border: 3px solid #222; border-right: none; border-radius: 8px 0 0 8px; }
+        .stem-class-door-b { position: absolute; bottom: -3px; right: 22%; width: 24px; height: 12px; background: #e5e5e5; border: 3px solid #222; border-bottom: none; border-radius: 8px 8px 0 0; }
+        
+        /* Study box */
+        .stem-study { position: absolute; top: 20%; left: 5%; width: 45%; height: 74%; background: #f5f5f5; border: 3px solid #333; border-radius: 20px 8px 8px 8px; }
+        
+        /* Study interior - top 3 circles */
+        .stem-study-c-top { position: absolute; top: 8%; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+        .stem-c { width: 24px; height: 24px; background: repeating-linear-gradient(45deg,#b5b5b5,#b5b5b5 2px,#c8c8c8 2px,#c8c8c8 4px); border-radius: 50%; border: 1px solid #999; }
+        
+        /* Study label */
+        .stem-study-text { position: absolute; top: 22%; left: 50%; transform: translateX(-50%); font-size: 1.2em; font-weight: bold; color: #222; }
+        
+        /* Desk label */
+        .stem-desk-label { position: absolute; top: 48%; left: 5%; font-size: 0.6em; color: #222; }
+        
+        /* Seats */
+        .stem-seats-top { position: absolute; top: 35%; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; }
+        .stem-desk { position: absolute; top: 48%; left: 50%; transform: translateX(-50%); width: 86%; height: 13%; background: repeating-linear-gradient(90deg,#a08060,#a08060 5px,#a08060 5px,#a08060 10px); border-radius: 4px; border: 2px solid #a08060; }
+        .stem-cam1-label { position: absolute; top: 52%; left: 50%; transform: translateX(-50%); font-size: 0.55em; color: #666; }
+        .stem-seats-bottom { position: absolute; top: 62%; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; }
+        
+        /* Study interior - bottom 3 circles */
+        .stem-study-c-bottom { position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+        
+        /* Bottom entrance */
+        .stem-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 12%; background: #e5e5e5; display: flex; align-items: center; padding: 0 1%; gap: 1.5%; }
+        .stem-ent { flex: 1; height: 80%; background: #f5f5f5; border: 2.5px solid #222; border-radius: 14px; position: relative; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 3px; }
+        .stem-ent-door { position: absolute; bottom: -2.5px; left: 50%; transform: translateX(-50%); width: 28px; height: 12px; background: #e5e5e5; border: 2.5px solid #222; border-bottom: none; border-radius: 6px 6px 0 0; }
+        .stem-ent-text { font-size: 0.8em; color: #222; margin-bottom: 10px; }
+        .stem-wc { width: 14%; height: 80%; background: #f5f5f5; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3em; font-weight: bold; color: #222; }
+        
+        /* Seat styles */
+        .stem-seat { width: 28px; height: 28px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 600; cursor: default; position: relative; }
+        .stem-seat.available { background: #fde047; border: 2px solid #d4a000; color: #785a00; }
+        .stem-seat.occupied { background: #fde047; border: 2px solid #d4a000; color: #785a00; }
+        .stem-seat.available { background: #86efac; border: 2px solid #22c55e; color: #14532d; }
+        .stem-seat.occupied { background: #fca5a5; border: 2px solid #ef4444; color: #7f1d1d; }
+        .stem-seat:hover { transform: scale(1.12); z-index: 10; }
+        .stem-seat:hover::after { content: attr(data-tooltip); position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%); background: #222; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.7em; white-space: nowrap; z-index: 100; }
+        .stem-seat-num { font-size: 0.8em; font-weight: 700; line-height: 1; }
+        .stem-seat-icon { font-size: 0.5em; line-height: 1; }
+        .stem-g { width: 24px; height: 24px; background: #888; border-radius: 3px; }
+        
+        /* ==================== Main Wing Floor Plan ==================== */
+        .main-floor-plan {
+            background: #e8e8e8;
+            border-radius: 8px;
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1.1;
+            max-width: 550px;
+            margin: 0 auto 35px auto;
+        }
+        
+        /* Top title */
+        .main-title { position: absolute; top: 1.5%; left: 50%; transform: translateX(-50%); font-size: 1.5em; font-weight: bold; color: #222; }
+        
+        /* Locker */
+        .main-locker { position: absolute; top: 7.5%; left: 12%; width: 76%; height: 5%; background: #f5f5f5; border: 2px solid #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1em; color: #222; }
+        
+        /* Learning Resources Centre */
+        .main-lrc { position: absolute; top: 13%; left: 8%; width: 22%; height: 72%; background: #f8f8f8; border: 3px solid #222; border-radius: 16px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; }
+        .main-lrc-text { font-size: 1em; font-weight: bold; color: #222; line-height: 1.3; }
+        .main-lrc-door { position: absolute; bottom: -3px; left: 25%; width: 24px; height: 10px; background: #e8e8e8; border: 3px solid #222; border-bottom: none; border-radius: 6px 6px 0 0; }
+        
+        /* 3 desk areas */
+        .main-tables { position: absolute; top: 20%; left: 26%; width: 46%; height: 74%; display: flex; flex-direction: column; justify-content: flex-start; gap: 40px; }
+        .main-table-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .main-table-seats { display: flex; gap: 3px; }
+        .main-table-desk { width: 130px; height: 50px; background: repeating-linear-gradient(45deg,#ce7304a9,#ce7304a9 3px,#ce7304a9 3px,#ce7304a9 6px); border-radius: 4px; border: 1px solid #999; }
+        
+        /* W.C. */
+        .main-wc { position: absolute; top: 13%; right: 10%; width: 18%; height: 36%; background: #f8f8f8; border: 3px solid #222; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+        .main-wc-text { font-size: 1.3em; font-weight: bold; color: #222; }
+        .main-wc-door1 { position: absolute; right: -3px; top: 25%; width: 10px; height: 22px; background: #e8e8e8; border: 3px solid #222; border-right: none; border-radius: 6px 0 0 6px; }
+        .main-wc-door2 { position: absolute; right: -3px; top: 58%; width: 10px; height: 22px; background: #e8e8e8; border: 3px solid #222; border-right: none; border-radius: 6px 0 0 6px; }
+        
+        /* Staff Room */
+        .main-staff { position: absolute; top: 52%; right: 10%; width: 18%; height: 33%; background: #f8f8f8; border: 3px solid #222; border-radius: 16px; display: flex; align-items: center; justify-content: center; text-align: center; }
+        .main-staff-text { font-size: 0.9em; font-weight: bold; color: #222; }
+        .main-staff-door { position: absolute; bottom: -3px; right: 30%; width: 22px; height: 10px; background: #e8e8e8; border: 3px solid #222; border-bottom: none; border-radius: 6px 6px 0 0; }
+        
+        /* Main Wing seats */
+        .main-seat { width: 26px; height: 26px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 600; cursor: default; position: relative; }
+        .main-seat.available { background: #86efac; border: 2px solid #22c55e; color: #14532d; }
+        .main-seat.occupied { background: #fca5a5; border: 2px solid #ef4444; color: #7f1d1d; }
+        .main-seat:hover { transform: scale(1.12); z-index: 10; }
+        .main-seat:hover::after { content: attr(data-tooltip); position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%); background: #222; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.7em; white-space: nowrap; z-index: 100; }
+        .main-seat-num { font-size: 0.7em; font-weight: 700; line-height: 1; }
+        .main-seat-icon { font-size: 0.4em; line-height: 1; }
+        
+        /* ==================== Cathay Floor Plan ==================== */
+        .cathay-floor-plan {
+            background: #f5f5f5;
+            border: 3px solid #222;
+            border-radius: 4px;
+            position: relative;
+            width: 100%;
+            aspect-ratio: 2.5 / 1;
+            max-width: 900px;
+            margin: 0 auto 35px auto;
+        }
+        
+        /* Sky blue window */
+        .cathay-window { position: absolute; top: 0; left: 0; width: 42%; height: 3%; background: #87CEEB; }
+        
+        /* Top gray bar */
+        .cathay-top-bar { position: absolute; top: 3%; left: 0; width: 42%; height: 10%; background: #b8b8b8; }
+        
+        /* Camera labels */
+        .cathay-cam2-label { position: absolute; top: 4%; left: 1%; font-size: 0.65em; color: #222; background: #e8e8e8; padding: 2px 6px; border: 1px solid #666; }
+        .cathay-cam3-label { position: absolute; top: 4%; left: 24%; font-size: 0.65em; color: #222; background: #e8e8e8; padding: 2px 6px; border: 1px solid #666; }
+        
+        /* Seats */
+        .cathay-seats { position: absolute; top: 11%; left: 1%; display: flex; gap: 3px; }
+        
+        
+        /* D07, D08 rooms */
+        .cathay-rooms { position: absolute; top: 28%; left: 1%; width: 42%; bottom: 3%; background: #f8f8f8; border: 3px solid #222; border-radius: 0; display: flex; }
+        .cathay-room { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 1.1em; font-weight: bold; color: #222; position: relative; }
+        .cathay-room-divider { width: 2px; background: #222; }
+        .cathay-room-door { position: absolute; top: -3px; left: 50%; transform: translateX(-50%); width: 16px; height: 10px; background: #f5f5f5; border: 2px solid #222; border-top: none; border-radius: 0 0 4px 4px; }
+        
+        /* Hall text */
+        .cathay-hall-text { position: absolute; top: 45%; left: 58%; font-size: 1.5em; font-weight: bold; color: #222; }
+        
+        /* Lounge area */
+        .cathay-lounge { position: absolute; top: 6%; right: 1%; width: 44%; height: 75%; }
+        
+        /* Round tables - striped pattern */
+        .cathay-round-table { position: absolute; width: 50px; height: 50px; background: repeating-linear-gradient(45deg, #c8c8c8, #c8c8c8 3px, #e0e0e0 3px, #e0e0e0 6px); border-radius: 50%; border: 1px solid #999; }
+        
+        /* Square chairs */
+        .cathay-chair { position: absolute; width: 16px; height: 16px; background: #a0a0a0; border-radius: 2px; transform: rotate(15deg); }
+        
+        /* 3-seater sofa */
+        .cathay-sofa { 
+            position: absolute; 
+            bottom: 3%; 
+            left: 52%; 
+            width: 130px; 
+            height: 45px; 
+            background: #d5ccc5;
+            border: 2px solid #222;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+        }
+        .cathay-sofa-seat {
+            height: 60%;
+            display: flex;
+            padding: 2px 4px;
+        }
+        .cathay-sofa-cushion {
+            flex: 1;
+            background: #d5ccc5;
+            border: 2px solid #222;
+            border-radius: 50% 50% 0 0;
+            margin: 0 1px;
+        }
+        .cathay-sofa-back {
+            height: 40%;
+            background: #d5ccc5;
+            border-top: 2px solid #222;
+            display: flex;
+        }
+        .cathay-sofa-back-section {
+            flex: 1;
+            border-right: 1px solid #222;
+        }
+        .cathay-sofa-back-section:last-child { border-right: none; }
+        .cathay-sofa-arm-left {
+            position: absolute;
+            left: -8px;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            background: #d5ccc5;
+            border: 2px solid #222;
+            border-right: none;
+            border-radius: 4px 0 0 4px;
+        }
+        .cathay-sofa-arm-right {
+            position: absolute;
+            right: -8px;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            background: #d5ccc5;
+            border: 2px solid #222;
+            border-left: none;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        /* Arch-shaped entrance doors */
+        .cathay-entrance1 { 
+            position: absolute; 
+            bottom: 3%; 
+            left: 44%; 
+            width: 36px; 
+            height: 26px;
+            background: transparent;
+        }
+        .cathay-entrance1::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 8px;
+            height: 10px;
+            background: #d5ccc5;
+            border: 1px solid #222;
+        }
+        .cathay-entrance1::after {
+            content: '';
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            width: 36px;
+            height: 16px;
+            background: transparent;
+            border: 2px solid #222;
+            border-bottom: none;
+            border-radius: 36px 36px 0 0;
+        }
+        .cathay-entrance2 { 
+            position: absolute; 
+            bottom: 3%; 
+            right: 2%; 
+            width: 36px; 
+            height: 26px;
+            background: transparent;
+        }
+        .cathay-entrance2::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 8px;
+            height: 10px;
+            background: #d5ccc5;
+            border: 1px solid #222;
+        }
+        .cathay-entrance2::after {
+            content: '';
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            width: 36px;
+            height: 16px;
+            background: transparent;
+            border: 2px solid #222;
+            border-bottom: none;
+            border-radius: 36px 36px 0 0;
+        }
+        
+        /* Entrance labels */
+        .cathay-entrance-label1 {
+            position: absolute;
+            bottom: 2%;
+            left: 44%;
+            font-size: 0.7em;
+            font-weight: 600;
+            color: #333;
+            background: rgba(255,255,255,0.88);
+            padding: 1px 5px;
+            border-radius: 3px;
+            border: 1px solid #bbb;
+        }
+        .cathay-entrance-label2 {
+            position: absolute;
+            bottom: 2%;
+            right: 0.5%;
+            font-size: 0.7em;
+            font-weight: 600;
+            color: #333;
+            background: rgba(255,255,255,0.88);
+            padding: 1px 5px;
+            border-radius: 3px;
+            border: 1px solid #bbb;
+        }
+        
+        
+        /* Cathay seats */
+        .cathay-seat { width: 26px; height: 26px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 600; cursor: default; position: relative; }
+        .cathay-seat.available { background: #86efac; border: 2px solid #22c55e; color: #14532d; }
+        .cathay-seat.occupied { background: #fca5a5; border: 2px solid #ef4444; color: #7f1d1d; }
+        .cathay-seat:hover { transform: scale(1.12); z-index: 10; }
+        .cathay-seat:hover::after { content: attr(data-tooltip); position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%); background: #222; color: white; padding: 2px 6px; border-radius: 3px; font-size: 0.7em; white-space: nowrap; z-index: 100; }
+        .cathay-seat-num { font-size: 0.75em; font-weight: 700; line-height: 1; }
+        .cathay-seat-icon { font-size: 0.45em; line-height: 1; }
+        
+        /* ==================== Responsive (Mobile Optimization) ==================== */
+        @media (max-width: 900px) {
+            .container {
+                padding: 14px;
+            }
+
+            .header {
+                padding: 18px;
+                border-radius: 18px;
+                gap: 12px;
+            }
+
+            .logo {
+                gap: 12px;
+            }
+
+            .logo-icon {
+                width: 44px;
+                height: 44px;
+                font-size: 22px;
+            }
+
+            .logo-text h1 {
+                font-size: 1.25em;
+            }
+
+            .logo-text p {
+                font-size: 0.8em;
+            }
+
+            .main-nav {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .main-nav-btn {
+                flex: 1 1 160px;
+                padding: 12px 16px;
+            }
+
+            .campus-tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 4px;
+                gap: 8px;
+            }
+
+            .campus-tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .campus-tab {
+                flex: 0 0 auto;
+                white-space: nowrap;
+                padding: 10px 14px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 14px;
+                border-radius: 14px;
+            }
+
+            .stat-value {
+                font-size: 1.6em;
+            }
+
+            .stat-label {
+                font-size: 0.78em;
+            }
+
+            .progress-text {
+                font-size: 0.72em;
+            }
+
+            .floor-plan {
+                padding: 16px;
+                border-radius: 18px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .floor-plan-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .floor-plan-title {
+                font-size: 1em;
+            }
+
+            .last-updated {
+                font-size: 0.78em;
+            }
+
+            .stem-floor-plan { min-width: 600px; }
+            .main-floor-plan { min-width: 520px; }
+            .cathay-floor-plan { min-width: 720px; }
+
+            .seat {
+                width: 32px;
+                height: 32px;
+                border-radius: 7px;
+            }
+            .seat-num { font-size: 0.82em; }
+            .seat-status { font-size: 0.52em; }
+
+            .main-seat, .stem-seat, .cathay-seat {
+                width: 22px;
+                height: 22px;
+                border-radius: 4px;
+            }
+            .main-seat-num, .stem-seat-num, .cathay-seat-num { font-size: 0.62em; }
+            .main-seat-icon, .stem-seat-icon, .cathay-seat-icon { font-size: 0.38em; }
+
+            .main-table-desk {
+                width: clamp(100px, 38vw, 130px);
+                height: clamp(40px, 13vw, 50px);
+            }
+
+            .chart-section {
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            .chart-container {
+                height: 220px;
+            }
+
+            footer {
+                padding: 18px;
+                font-size: 0.8em;
+            }
+
+            .toast-container {
+                left: 12px;
+                right: 12px;
+                top: 12px;
+                max-width: none;
+            }
+
+            .toast {
+                width: 100%;
+            }
+        }
+
+        /* Keep 3-column layout below 480px, reduce card size */
+        @media (max-width: 480px) {
+            .container { padding: 12px; }
+
+            .stats-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .stat-card { padding: 10px 6px; }
+            .stat-value { font-size: 1.3em; }
+            .stat-label { font-size: 0.7em; }
+            .progress-bar { height: 6px; }
+            .progress-text { font-size: 0.65em; }
+        }
+
+        /* Keep 3-column layout below 360px, reduce further */
+        @media (max-width: 360px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 6px;
+            }
+            .stat-card { padding: 8px 4px; }
+            .stat-value { font-size: 1.1em; }
+            .stat-label { font-size: 0.65em; }
+        }
+
+        /* Analytics - convert table to card layout on mobile */
+        @media (max-width: 600px) {
+            .popularity-table thead {
+                display: none;
+            }
+
+            .popularity-table,
+            .popularity-table tbody,
+            .popularity-table tr,
+            .popularity-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .popularity-table tr {
+                background: #fff;
+                border: 1px solid #e0e0e0;
+                border-radius: 14px;
+                padding: 12px 14px;
+                margin-bottom: 12px;
+            }
+
+            .popularity-table td {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 8px 0;
+                border-bottom: 1px solid #f0f0f0;
+            }
+
+            .popularity-table td:last-child {
+                border-bottom: none;
+            }
+
+            .popularity-table td::before {
+                content: attr(data-label);
+                color: #666;
+                font-weight: 600;
+                font-size: 0.85em;
+                flex: 0 0 auto;
+            }
+
+            .usage-bar-wrapper {
+                justify-content: flex-end;
+            }
+
+            .usage-bar-bg {
+                width: clamp(90px, 35vw, 160px);
+            }
+        }
+
+        /* Disable hover effects on touch devices */
+        @media (hover: none) and (pointer: coarse) {
+            .seat:hover,
+            .stem-seat:hover,
+            .main-seat:hover,
+            .cathay-seat:hover {
+                transform: none;
+                box-shadow: none;
+            }
+
+            .seat:hover::after,
+            .seat:hover::before,
+            .stem-seat:hover::after,
+            .main-seat:hover::after,
+            .cathay-seat:hover::after {
+                display: none;
+            }
+        }
+
+</style>
+</head>
+<body>
+    <!-- Toast Notifications Container -->
+    <div class="toast-container" id="toast-container"></div>
+    
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">📡</div>
+                <div class="logo-text">
+                    <h1>SeatSense</h1>
+                    <p>PSB Academy Library System</p>
+                </div>
+            </div>
+            <div class="connection-status online" id="connection-status">
+                <span class="status-dot online" id="status-dot"></span>
+                <span id="status-text">Live</span>
+            </div>
+        </header>
+        
+        <!-- Main Navigation -->
+        <nav class="main-nav">
+            <button class="main-nav-btn active" data-page="dashboard">Dashboard</button>
+            <button class="main-nav-btn" data-page="analytics">Analytics</button>
+        </nav>
+        
+        <!-- ==================== Dashboard Page ==================== -->
+        <div class="page-section active" id="dashboard-page">
+            <!-- Campus Tabs -->
+            <div class="campus-tabs">
+                <button class="campus-tab active" data-campus="main_wing">Main Wing</button>
+                <button class="campus-tab" data-campus="stem_wing">STEM Wing</button>
+                <button class="campus-tab" data-campus="cathay">Cathay</button>
+            </div>
+            
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value total" id="total-seats">0</div>
+                    <div class="stat-label">Total Seats</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value available" id="available-seats">0</div>
+                    <div class="stat-label">Available</div>
+                    <!-- NEW: Progress Bar -->
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="availability-bar" style="width: 0%;"></div>
+                        </div>
+                        <div class="progress-text" id="availability-percent">0% Available</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value occupied" id="occupied-seats">0</div>
+                    <div class="stat-label">Occupied</div>
+                </div>
+            </div>
+            
+            <!-- Floor Plan -->
+            <div class="floor-plan">
+                <!-- Header with Last Updated -->
+                <div class="floor-plan-header">
+                    <div class="floor-plan-title" id="floor-plan-title">Main Wing - Floor Plan</div>
+                    <div class="last-updated">Last updated: <span id="last-updated-time">--:--:--</span></div>
+                </div>
+                
+                <!-- Default Floor Grid (Main Wing, Cathay) -->
+                <div class="floor-grid" id="default-floor-grid">
+                    <!-- Window -->
+                    <div class="window-area">🪟 WINDOW</div>
+                    
+                    <!-- Row 1: Camera 2 (left) / Camera 3 (right) -->
+                    <div class="camera-box" id="cam2-section">
+                        <div class="camera-box-title">📹 Camera 2</div>
+                        <div class="seats-row" id="cam2-seats"></div>
+                    </div>
+                    
+                    <div class="camera-box" id="cam3-section">
+                        <div class="camera-box-title">📹 Camera 3</div>
+                        <div class="seats-row" id="cam3-seats"></div>
+                    </div>
+                    
+                    <!-- Row 2: Lab (left) / Camera 1 (right) -->
+                    <div class="lab-room" id="lab-section">
+                        <div class="lab-room-title">🔬 Laboratory</div>
+                        <div class="lab-room-subtitle">Lab Room</div>
+                    </div>
+                    
+                    <div class="table-area" id="cam1-section">
+                        <div class="table-title">📹 Camera 1</div>
+                        <div class="table-seats">
+                            <div class="table-row" id="cam1-row-top"></div>
+                            <div class="table-surface"></div>
+                            <div class="table-row" id="cam1-row-bottom"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Legend -->
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color available"></div>
+                            <span>Available</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color occupied"></div>
+                            <span>Occupied</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- STEM Wing Floor Plan -->
+                <div class="stem-floor-plan hidden" id="stem-floor-grid">
+                    <!-- Sky blue window -->
+                    <div class="stem-window"></div>
+                    
+                    <!-- Top gray bar -->
+                    <div class="stem-top-left"></div>
+                    <div class="stem-top-right"></div>
+                    
+                    <!-- Right side gray area -->
+                    <div class="stem-right-area"></div>
+                    
+                    <!-- Camera 3 -->
+                    <div class="stem-cam3-label">camera3</div>
+                    <div class="stem-cam3-arrow"></div>
+                    <div class="stem-cam3-seats" id="stem-cam3-seats"></div>
+                    
+                    <!-- PSB logo -->
+                    <div class="stem-psb">PSB</div>
+                    
+                    <!-- Camera 2 -->
+                    <div class="stem-cam2-arrow"></div>
+                    <div class="stem-cam2-label">camera2</div>
+                    <div class="stem-cam2-seats" id="stem-cam2-seats"></div>
+                    <div class="stem-blue-line"></div>
+                    <div class="stem-cam2-gray">
+                        <div class="stem-g"></div>
+                        <div class="stem-g"></div>
+                        <div class="stem-g"></div>
+                    </div>
+                    
+                    <!-- Right gray seats -->
+                    <div class="stem-right-seats">
+                        <div class="stem-g"></div>
+                        <div class="stem-g"></div>
+                        <div class="stem-g"></div>
+                        <div class="stem-g"></div>
+                        <div class="stem-g"></div>
+                    </div>
+                    
+                    <!-- Lounge tables -->
+                    <div class="stem-lounge">
+                        <div class="stem-round-table" style="left:12px;top:22px;"></div>
+                        <div class="stem-lounge-chair" style="left:0;top:12px;"></div>
+                        <div class="stem-lounge-chair" style="left:0;top:40px;"></div>
+                        <div class="stem-lounge-chair" style="left:22px;top:0;"></div>
+                        <div class="stem-lounge-chair" style="left:38px;top:0;"></div>
+                        <div class="stem-round-table" style="left:85px;top:14px;"></div>
+                        <div class="stem-lounge-chair" style="left:78px;top:0;"></div>
+                        <div class="stem-lounge-chair" style="left:105px;top:0;"></div>
+                        <div class="stem-lounge-chair" style="left:125px;top:18px;"></div>
+                        <div class="stem-lounge-chair" style="left:125px;top:38px;"></div>
+                    </div>
+                    
+                    <!-- Lab room -->
+                    <div class="stem-lab">
+                        <div class="stem-lab-text">Lab</div>
+                        <div class="stem-lab-door-r"></div>
+                        <div class="stem-lab-door-b"></div>
+                    </div>
+                    
+                    <!-- Class room -->
+                    <div class="stem-class">
+                        <div class="stem-class-top">class</div>
+                        <div class="stem-class-right">class</div>
+                        <div class="stem-class-door-t"></div>
+                        <div class="stem-class-door-r"></div>
+                        <div class="stem-class-door-b"></div>
+                        
+                        <!-- Study room -->
+                        <div class="stem-study" id="stem-cam1-section">
+                            <!-- Top 3 circles -->
+                            <div class="stem-study-c-top">
+                                <div class="stem-c"></div>
+                                <div class="stem-c"></div>
+                                <div class="stem-c"></div>
+                            </div>
+                            
+                            <div class="stem-study-text">Study</div>
+                            
+                            <!-- Desk label -->
+                            <div class="stem-desk-label"></div>
+                            
+                            <!-- Top seats -->
+                            <div class="stem-seats-top" id="stem-cam1-row-top"></div>
+                            
+                            <!-- Desk -->
+                            <div class="stem-desk"></div>
+                            <div class="stem-cam1-label"></div>
+                            
+                            <!-- Bottom seats -->
+                            <div class="stem-seats-bottom" id="stem-cam1-row-bottom"></div>
+                            
+                            <!-- Bottom 3 circles -->
+                            <div class="stem-study-c-bottom">
+                                <div class="stem-c"></div>
+                                <div class="stem-c"></div>
+                                <div class="stem-c"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bottom entrance -->
+                    <div class="stem-bottom">
+                        <div class="stem-ent"><div class="stem-ent-door"></div><span class="stem-ent-text">entrance</span></div>
+                        <div class="stem-ent"></div>
+                        <div class="stem-ent"><div class="stem-ent-door"></div><span class="stem-ent-text">entrance</span></div>
+                        <div class="stem-ent"></div>
+                        <div class="stem-wc">W.C</div>
+                    </div>
+                    
+                    <div class="legend" style="position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);">
+                        <div class="legend-item"><div class="legend-color available"></div><span>Available</span></div>
+                        <div class="legend-item"><div class="legend-color occupied"></div><span>Occupied</span></div>
+                    </div>
+                </div>
+                
+                <!-- Main Wing Floor Plan -->
+                <div class="main-floor-plan hidden" id="main-floor-grid">
+                    <!-- Title -->
+                    <div class="main-title">Main wing</div>
+                    
+                    <!-- Locker -->
+                    <div class="main-locker">locker</div>
+                    
+                    <!-- Learning Resources Centre -->
+                    <div class="main-lrc">
+                        <div class="main-lrc-text">learning<br>resources<br>centre</div>
+                        <div class="main-lrc-door"></div>
+                    </div>
+                    
+                    <!-- 3 desk areas -->
+                    <div class="main-tables">
+                        <!-- Desk 1 (seats 1-8) -->
+                        <div class="main-table-group">
+                            <div class="main-table-seats" id="main-table1-top"></div>
+                            <div class="main-table-desk"></div>
+                            <div class="main-table-seats" id="main-table1-bottom"></div>
+                        </div>
+                        <!-- Desk 2 (seats 9-16) -->
+                        <div class="main-table-group">
+                            <div class="main-table-seats" id="main-table2-top"></div>
+                            <div class="main-table-desk"></div>
+                            <div class="main-table-seats" id="main-table2-bottom"></div>
+                        </div>
+                        <!-- Desk 3 (seats 17-24) -->
+                        <div class="main-table-group">
+                            <div class="main-table-seats" id="main-table3-top"></div>
+                            <div class="main-table-desk"></div>
+                            <div class="main-table-seats" id="main-table3-bottom"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- W.C. -->
+                    <div class="main-wc">
+                        <div class="main-wc-text">W.C</div>
+                        <div class="main-wc-door1"></div>
+                        <div class="main-wc-door2"></div>
+                    </div>
+                    
+                    <!-- Staff Room -->
+                    <div class="main-staff">
+                        <div class="main-staff-text">staff room</div>
+                        <div class="main-staff-door"></div>
+                    </div>
+                    
+                    <div class="legend" style="position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);">
+                        <div class="legend-item"><div class="legend-color available"></div><span>Available</span></div>
+                        <div class="legend-item"><div class="legend-color occupied"></div><span>Occupied</span></div>
+                    </div>
+                </div>
+                
+                <!-- Cathay Floor Plan -->
+                <div class="cathay-floor-plan hidden" id="cathay-floor-grid">
+                    <!-- Sky blue window -->
+                    <div class="cathay-window"></div>
+                    
+                    <!-- Top gray bar -->
+                    <div class="cathay-top-bar"></div>
+                    
+                    <!-- Camera labels -->
+                    <div class="cathay-cam2-label">camera2</div>
+                    <div class="cathay-cam3-label">camera3</div>
+                    
+                    <!-- Seats -->
+                    <div class="cathay-seats" id="cathay-seats"></div>
+                    <div class="cathay-blue-line"></div>
+                    
+                    <!-- D07, D08 rooms -->
+                    <div class="cathay-rooms">
+                        <div class="cathay-room">
+                            D07
+                            <div class="cathay-room-door"></div>
+                        </div>
+                        <div class="cathay-room-divider"></div>
+                        <div class="cathay-room">
+                            D08
+                            <div class="cathay-room-door"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hall text -->
+                    <div class="cathay-hall-text">Hall</div>
+                    
+                    <!-- Lounge area -->
+                    <div class="cathay-lounge">
+                        <!-- Table 1 (top left) + chairs -->
+                        <div class="cathay-round-table" style="left:28%;top:8%;"></div>
+                        <div class="cathay-chair" style="left:22%;top:2%;"></div>
+                        <div class="cathay-chair" style="left:42%;top:2%;"></div>
+                        <div class="cathay-chair" style="left:18%;top:22%;"></div>
+                        <div class="cathay-chair" style="left:44%;top:22%;"></div>
+                        
+                        <!-- Table 2 (top right) + chairs -->
+                        <div class="cathay-round-table" style="right:8%;top:8%;"></div>
+                        <div class="cathay-chair" style="right:2%;top:2%;"></div>
+                        <div class="cathay-chair" style="right:24%;top:2%;"></div>
+                        <div class="cathay-chair" style="right:0%;top:22%;"></div>
+                        <div class="cathay-chair" style="right:26%;top:22%;"></div>
+                        
+                        <!-- Table 3 (bottom right) + chairs -->
+                        <div class="cathay-round-table" style="right:12%;bottom:22%;"></div>
+                        <div class="cathay-chair" style="right:6%;bottom:16%;"></div>
+                        <div class="cathay-chair" style="right:28%;bottom:16%;"></div>
+                        <div class="cathay-chair" style="right:6%;bottom:38%;"></div>
+                        <div class="cathay-chair" style="right:28%;bottom:38%;"></div>
+                    </div>
+                    
+                    <!-- Sofa (cushions facing up) -->
+                    <div class="cathay-sofa">
+                        <div class="cathay-sofa-arm-left"></div>
+                        <div class="cathay-sofa-seat">
+                            <div class="cathay-sofa-cushion"></div>
+                            <div class="cathay-sofa-cushion"></div>
+                            <div class="cathay-sofa-cushion"></div>
+                        </div>
+                        <div class="cathay-sofa-back">
+                            <div class="cathay-sofa-back-section"></div>
+                            <div class="cathay-sofa-back-section"></div>
+                            <div class="cathay-sofa-back-section"></div>
+                        </div>
+                        <div class="cathay-sofa-arm-right"></div>
+                    </div>
+                    
+                    <!-- Arch-shaped entrance doors -->
+                    <div class="cathay-entrance1"></div>
+                    <div class="cathay-entrance-label1">entrance</div>
+                    <div class="cathay-entrance2"></div>
+                    <div class="cathay-entrance-label2">entrance</div>
+                    
+                    <div class="legend" style="position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);">
+                        <div class="legend-item"><div class="legend-color available"></div><span>Available</span></div>
+                        <div class="legend-item"><div class="legend-color occupied"></div><span>Occupied</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ==================== Analytics Page ==================== -->
+        <div class="page-section" id="analytics-page">
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="summary-icon">📝</div>
+                    <div class="summary-value" id="total-records">0</div>
+                    <div class="summary-label">Total Records</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">⏰</div>
+                    <div class="summary-value" id="peak-hour">--:00</div>
+                    <div class="summary-label">Peak Hour</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">🪑</div>
+                    <div class="summary-value" id="popular-seat">-</div>
+                    <div class="summary-label">Most Popular</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">📈</div>
+                    <div class="summary-value" id="avg-occupancy">0%</div>
+                    <div class="summary-label">Avg Occupancy</div>
+                </div>
+            </div>
+            
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <h3>💡 Best Time to Visit</h3>
+                    <p id="insight-best-time">Loading...</p>
+                </div>
+                <div class="insight-card">
+                    <h3>🔥 Busiest Period</h3>
+                    <p id="insight-busiest">Loading...</p>
+                </div>
+            </div>
+            
+            <div class="chart-section">
+                <div class="chart-title">📈 Hourly Occupancy Rate</div>
+                <div class="chart-container">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-section">
+                <div class="chart-title">🔥 Peak Hours (Top 5)</div>
+                <div class="peak-grid" id="peak-hours-container"></div>
+            </div>
+            
+            <div class="chart-section">
+                <div class="chart-title">🪑 Seat Popularity</div>
+                <table class="popularity-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Camera</th>
+                            <th>Seat</th>
+                            <th>Usage Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="popularity-table-body"></tbody>
+                </table>
+            </div>
+            
+            <div class="chart-section">
+                <div class="chart-title">📅 Daily Trend (Last 7 Days)</div>
+                <div class="chart-container">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            Library Seat Occupancy Detection System &copy; 2025 BSc Computing Science Project
+        </footer>
+    </div>
+    
+    <script>
+        // ==================== Variables ====================
+        // Floor plan displays fixed seat counts regardless of API (main_wing hardcoded to 24)
+        const FLOOR_PLAN_SEATS = {
+            'main_wing': 24   // 3 tables x 8 seats each
+        };
+
+        // Only cameras actually rendered in the floor plan contribute to stats
+        // main_wing: cam3 data exists but is not rendered in the floor plan
+        const FLOOR_PLAN_CAMERAS = {
+            'main_wing': ['cam1'],
+            'stem_wing': ['cam1', 'cam2', 'cam3'],
+            'cathay': ['cam2', 'cam3']
+        };
+        let currentPage = 'dashboard';
+        let currentCampus = 'main_wing';
+        let hourlyChart = null;
+        let dailyChart = null;
+        let analyticsLoaded = false;
+        let previousSeatStatus = {};  // Store previous seat status
+        let pendingSeatChanges = {};  // Pending changes for debouncing
+        let connectionRetries = 0;
+        let isConnected = true;
+        
+        const DEBOUNCE_TIME = 3000;  // Notify only after 3s of sustained change
+        
+        const campusCameras = {
+            'main_wing': ['cam1', 'cam3'],
+            'stem_wing': ['cam1', 'cam2', 'cam3'],
+            'cathay': ['cam2', 'cam3']
+        };
+        
+        const campusNames = {
+            'main_wing': 'Main Wing',
+            'stem_wing': 'STEM Wing',
+            'cathay': 'Cathay'
+        };
+        
+        // ==================== NEW: Toast Notification System ====================
+        function showToast(type, title, message) {
+            const container = document.getElementById('toast-container');
+            
+            const icons = {
+                'available': '✅',
+                'occupied': '🔴',
+                'error': '⚠️',
+                'info': 'ℹ️'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+        
+        // ==================== NEW: Connection Status ====================
+        function updateConnectionStatus(status) {
+            const statusElement = document.getElementById('connection-status');
+            const dotElement = document.getElementById('status-dot');
+            const textElement = document.getElementById('status-text');
+            
+            statusElement.className = `connection-status ${status}`;
+            dotElement.className = `status-dot ${status}`;
+            
+            switch(status) {
+                case 'online':
+                    textElement.textContent = 'Live';
+                    isConnected = true;
+                    connectionRetries = 0;
+                    break;
+                case 'offline':
+                    textElement.textContent = 'Disconnected';
+                    isConnected = false;
+                    break;
+                case 'reconnecting':
+                    textElement.textContent = 'Reconnecting...';
+                    break;
+            }
+        }
+        
+        // ==================== NEW: Check Seat Changes with Debouncing ====================
+        function checkSeatChanges(camId, seats) {
+            const cameraKey = `${currentCampus}_${camId}`;
+            
+            if (!previousSeatStatus[cameraKey]) {
+                previousSeatStatus[cameraKey] = {};
+            }
+            
+            if (!pendingSeatChanges[cameraKey]) {
+                pendingSeatChanges[cameraKey] = {};
+            }
+            
+            Object.entries(seats).forEach(([seatName, status]) => {
+                const prevStatus = previousSeatStatus[cameraKey][seatName];
+                const seatKey = `${cameraKey}_${seatName}`;
+                
+                // State changed
+                if (prevStatus && prevStatus !== status) {
+                    // Already pending change
+                    if (pendingSeatChanges[seatKey]) {
+                        // Reverted to original - cancel timer (transient change)
+                        if (pendingSeatChanges[seatKey].originalStatus === status) {
+                            clearTimeout(pendingSeatChanges[seatKey].timer);
+                            delete pendingSeatChanges[seatKey];
+                        }
+                    } else {
+                        // New change detected - start 3s timer
+                        const seatNum = seatName.replace('Seat ', '');
+                        const camNum = camId.replace('cam', '');
+                        
+                        pendingSeatChanges[seatKey] = {
+                            originalStatus: prevStatus,
+                            newStatus: status,
+                            timer: setTimeout(() => {
+                                // Notify if state persists after 3s
+                                if (status === 'Available') {
+                                    showToast('available', 
+                                        `Seat ${seatNum} is now available!`, 
+                                        `Camera ${camNum} • ${campusNames[currentCampus]}`
+                                    );
+                                }
+                                delete pendingSeatChanges[seatKey];
+                            }, DEBOUNCE_TIME)
+                        };
+                    }
+                }
+                
+                previousSeatStatus[cameraKey][seatName] = status;
+            });
+        }
+        
+        // ==================== Main Navigation ====================
+        document.querySelectorAll('.main-nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.main-nav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                currentPage = btn.dataset.page;
+                
+                document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+                document.getElementById(currentPage + '-page').classList.add('active');
+                
+                if (currentPage === 'analytics' && !analyticsLoaded) {
+                    loadAnalytics();
+                    analyticsLoaded = true;
+                }
+            });
+        });
+        
+        // ==================== Campus Tabs ====================
+        document.querySelectorAll('.campus-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.campus-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentCampus = tab.dataset.campus;
+                updateFloorPlan();
+                fetchCampusData();
+            });
+        });
+        
+        // ==================== Update Last Updated Time ====================
+        function updateLastUpdatedTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+            document.getElementById('last-updated-time').textContent = timeStr;
+        }
+        
+        // ==================== Floor Plan ====================
+        function updateFloorPlan() {
+            const cameras = campusCameras[currentCampus];
+            
+            document.getElementById('floor-plan-title').textContent = 
+                campusNames[currentCampus] + ' - Floor Plan';
+            
+            // Hide all layouts
+            const defaultGrid = document.getElementById('default-floor-grid');
+            const stemGrid = document.getElementById('stem-floor-grid');
+            const mainGrid = document.getElementById('main-floor-grid');
+            const cathayGrid = document.getElementById('cathay-floor-grid');
+            
+            defaultGrid.classList.add('hidden');
+            stemGrid.classList.add('hidden');
+            mainGrid.classList.add('hidden');
+            cathayGrid.classList.add('hidden');
+            
+            // Show layout for selected campus
+            if (currentCampus === 'stem_wing') {
+                stemGrid.classList.remove('hidden');
+            } else if (currentCampus === 'main_wing') {
+                mainGrid.classList.remove('hidden');
+            } else if (currentCampus === 'cathay') {
+                cathayGrid.classList.remove('hidden');
+            }
+        }
+        
+        // Create seat for default layout
+        function createSeat(seatNum, status) {
+            const isAvailable = status === 'Available';
+            const tooltipText = isAvailable 
+                ? `Seat ${seatNum} - Available` 
+                : `Seat ${seatNum} - Occupied`;
+            
+            return `
+                <div class="seat ${isAvailable ? 'available' : 'occupied'}" data-tooltip="${tooltipText}">
+                    <span class="seat-num">${seatNum}</span>
+                    <span class="seat-status">${isAvailable ? '✓' : '✕'}</span>
+                </div>
+            `;
+        }
+        
+        // Create seat for STEM layout
+        function createStemSeat(seatNum, status) {
+            const isAvailable = status === 'Available';
+            const tooltipText = isAvailable 
+                ? `Seat ${seatNum} - Available` 
+                : `Seat ${seatNum} - Occupied`;
+            
+            return `
+                <div class="stem-seat ${isAvailable ? 'available' : 'occupied'}" data-tooltip="${tooltipText}">
+                    <span class="stem-seat-num">${seatNum}</span>
+                    <span class="stem-seat-icon">${isAvailable ? '✓' : '✕'}</span>
+                </div>
+            `;
+        }
+        
+        // Create seat for Main Wing layout
+        function createMainSeat(seatNum, status) {
+            const isAvailable = status === 'Available';
+            const tooltipText = isAvailable 
+                ? `Seat ${seatNum} - Available` 
+                : `Seat ${seatNum} - Occupied`;
+            
+            return `
+                <div class="main-seat ${isAvailable ? 'available' : 'occupied'}" data-tooltip="${tooltipText}">
+                    <span class="main-seat-num">${seatNum}</span>
+                    <span class="main-seat-icon">${isAvailable ? '✓' : '✕'}</span>
+                </div>
+            `;
+        }
+        
+        // Create seat for Cathay layout
+        function createCathaySeat(seatNum, status) {
+            const isAvailable = status === 'Available';
+            const tooltipText = isAvailable 
+                ? `Seat ${seatNum} - Available` 
+                : `Seat ${seatNum} - Occupied`;
+            
+            return `
+                <div class="cathay-seat ${isAvailable ? 'available' : 'occupied'}" data-tooltip="${tooltipText}">
+                    <span class="cathay-seat-num">${seatNum}</span>
+                    <span class="cathay-seat-icon">${isAvailable ? '✓' : '✕'}</span>
+                </div>
+            `;
+        }
+        
+        function renderSeats(camId, seats) {
+            const seatEntries = Object.entries(seats).sort((a, b) => {
+                const numA = parseInt(a[0].replace('Seat ', ''));
+                const numB = parseInt(b[0].replace('Seat ', ''));
+                return numA - numB;
+            });
+            
+            // Use campus-specific layout
+            if (currentCampus === 'stem_wing') {
+                renderStemSeats(camId, seatEntries);
+                return;
+            } else if (currentCampus === 'main_wing') {
+                renderMainSeats(camId, seatEntries);
+                return;
+            } else if (currentCampus === 'cathay') {
+                renderCathaySeats(camId, seatEntries);
+                return;
+            }
+        }
+        
+        // Render seats for Main Wing layout (24 seats = 3 desks x 8)
+        function renderMainSeats(camId, seatEntries) {
+            if (camId !== 'cam1') return;
+            
+            for (let tableNum = 1; tableNum <= 3; tableNum++) {
+                const topRow = document.getElementById(`main-table${tableNum}-top`);
+                const bottomRow = document.getElementById(`main-table${tableNum}-bottom`);
+                
+                if (!topRow || !bottomRow) continue;
+                
+                let topHtml = '';
+                let bottomHtml = '';
+                
+                const startSeat = (tableNum - 1) * 8 + 1;
+                
+                for (let i = 0; i < 4; i++) {
+                    const seatNum = startSeat + i;
+                    const seatEntry = seatEntries.find(([name]) => name === `Seat ${seatNum}`);
+                    const status = seatEntry ? seatEntry[1] : 'Available';
+                    topHtml += createMainSeat(seatNum, status);
+                }
+                
+                for (let i = 4; i < 8; i++) {
+                    const seatNum = startSeat + i;
+                    const seatEntry = seatEntries.find(([name]) => name === `Seat ${seatNum}`);
+                    const status = seatEntry ? seatEntry[1] : 'Available';
+                    bottomHtml += createMainSeat(seatNum, status);
+                }
+                
+                topRow.innerHTML = topHtml;
+                bottomRow.innerHTML = bottomHtml;
+            }
+        }
+        
+        // Render seats for Cathay layout (camera2 + camera3 side by side)
+        function renderCathaySeats(camId, seatEntries) {
+            const container = document.getElementById('cathay-seats');
+            if (!container) return;
+            
+            let html = container.innerHTML;
+            
+            if (camId === 'cam2') {
+                html = seatEntries.map(([seatName, status]) => {
+                    const num = parseInt(seatName.replace('Seat ', ''));
+                    return createCathaySeat(num, status);
+                }).join('');
+                const cam3Html = container.getAttribute('data-cam3') || '';
+                container.innerHTML = html + cam3Html;
+                container.setAttribute('data-cam2', html);
+            } else if (camId === 'cam3') {
+                html = seatEntries.map(([seatName, status]) => {
+                    const num = parseInt(seatName.replace('Seat ', ''));
+                    return createCathaySeat(num, status);
+                }).join('');
+                const cam2Html = container.getAttribute('data-cam2') || '';
+                container.innerHTML = cam2Html + html;
+                container.setAttribute('data-cam3', html);
+            }
+        }
+        
+        // Render seats for STEM Wing special layout
+        function renderStemSeats(camId, seatEntries) {
+            if (camId === 'cam1') {
+                const topRow = document.getElementById('stem-cam1-row-top');
+                const bottomRow = document.getElementById('stem-cam1-row-bottom');
+                
+                if (!topRow || !bottomRow) return;
+                
+                let topHtml = '';
+                let bottomHtml = '';
+                
+                seatEntries.forEach(([seatName, status]) => {
+                    const num = parseInt(seatName.replace('Seat ', ''));
+                    if (num <= 4) {
+                        topHtml += createStemSeat(num, status);
+                    } else {
+                        bottomHtml += createStemSeat(num, status);
+                    }
+                });
+                
+                topRow.innerHTML = topHtml;
+                bottomRow.innerHTML = bottomHtml;
+                
+            } else if (camId === 'cam2') {
+                const container = document.getElementById('stem-cam2-seats');
+                if (!container) return;
+                container.innerHTML = seatEntries.map(([seatName, status]) => {
+                    const num = parseInt(seatName.replace('Seat ', ''));
+                    return createStemSeat(num, status);
+                }).join('');
+                
+            } else if (camId === 'cam3') {
+                const container = document.getElementById('stem-cam3-seats');
+                if (!container) return;
+                container.innerHTML = seatEntries.map(([seatName, status]) => {
+                    const num = parseInt(seatName.replace('Seat ', ''));
+                    return createStemSeat(num, status);
+                }).join('');
+            }
+        }
+        
+        // ==================== NEW: Mark Camera Error ====================
+        function markCameraError(camId, hasError) {
+            const section = document.getElementById(`${camId}-section`);
+            if (section) {
+                if (hasError) {
+                    section.classList.add('camera-error');
+                } else {
+                    section.classList.remove('camera-error');
+                }
+            }
+        }
+        
+        async function fetchCampusData() {
+            try {
+                const response = await fetch(`/api/campus/${currentCampus}`);
+                
+                if (!response.ok) {
+                    throw new Error('Server error');
+                }
+                
+                const data = await response.json();
+                
+                if (!isConnected) {
+                    updateConnectionStatus('online');
+                }
+                connectionRetries = 0;
+                
+                // Use floor plan seat count if defined, otherwise use API count
+                const total = FLOOR_PLAN_SEATS[currentCampus] !== undefined
+                    ? FLOOR_PLAN_SEATS[currentCampus]
+                    : data.total_seats;
+
+                // Only count occupied seats from cameras shown in the floor plan
+                const visibleCams = FLOOR_PLAN_CAMERAS[currentCampus] || [];
+                const occupied = data.cameras
+                    .filter(cam => visibleCams.includes(cam.id))
+                    .reduce((sum, cam) => sum + cam.occupied, 0);
+                const available = total - occupied;
+                
+                document.getElementById('total-seats').textContent = total;
+                document.getElementById('available-seats').textContent = available;
+                document.getElementById('occupied-seats').textContent = occupied;
+                
+                const percent = total > 0 ? Math.round((available / total) * 100) : 0;
+                document.getElementById('availability-bar').style.width = percent + '%';
+                document.getElementById('availability-percent').textContent = percent + '% Available';
+                
+                updateLastUpdatedTime();
+                
+                data.cameras.forEach(cam => {
+                    checkSeatChanges(cam.id, cam.seats);
+                    renderSeats(cam.id, cam.seats);
+                    
+                    if (cam.error) {
+                        markCameraError(cam.id, true);
+                        showToast('error', 
+                            `Camera ${cam.id.replace('cam', '')} Error`, 
+                            cam.error
+                        );
+                    } else {
+                        markCameraError(cam.id, false);
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error fetching campus data:', error);
+                connectionRetries++;
+                
+                if (connectionRetries === 3) {
+                    updateConnectionStatus('offline');
+                    showToast('error', 
+                        'Connection Lost', 
+                        'Unable to connect to server. Retrying...'
+                    );
+                } else if (connectionRetries > 3) {
+                    updateConnectionStatus('offline');
+                }
+            }
+        }
+        
+        // ==================== Analytics Functions ====================
+        function createHourlyChart(data) {
+            const ctx = document.getElementById('hourlyChart').getContext('2d');
+            if (hourlyChart) hourlyChart.destroy();
+            
+            hourlyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.hour + ':00'),
+                    datasets: [{
+                        label: 'Occupancy Rate (%)',
+                        data: data.map(d => d.occupancy_rate),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
+                    }
+                }
+            });
+        }
+        
+        function createDailyChart(data) {
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            if (dailyChart) dailyChart.destroy();
+            
+            dailyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.date).reverse(),
+                    datasets: [{
+                        label: 'Avg Occupancy (%)',
+                        data: data.map(d => d.occupancy_rate).reverse(),
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
+                    }
+                }
+            });
+        }
+        
+        function createPeakHoursCards(data) {
+            document.getElementById('peak-hours-container').innerHTML = data.map((item, i) => `
+                <div class="peak-card">
+                    <div class="peak-rank">#${i + 1}</div>
+                    <div class="peak-time">${item.hour_display}</div>
+                    <div class="peak-rate">${item.occupancy_rate}% occupied</div>
+                </div>
+            `).join('');
+        }
+        
+        function createPopularityTable(data) {
+            document.getElementById('popularity-table-body').innerHTML = data.slice(0, 10).map((item, i) => `
+                <tr>
+                    <td data-label="Rank"><strong>#${i + 1}</strong></td>
+                    <td data-label="Camera"><span class="camera-badge ${item.camera_id}">${item.camera_id.replace('cam', 'Cam ')}</span></td>
+                    <td data-label="Seat">Seat ${item.seat_id}</td>
+                    <td data-label="Usage Rate">
+                        <div class="usage-bar-wrapper">
+                            <div class="usage-bar-bg">
+                                <div class="usage-bar-fill" style="width: ${item.usage_rate}%"></div>
+                            </div>
+                            <span>${item.usage_rate}%</span>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        async function loadAnalytics() {
+            try {
+                const [hourlyRes, peakRes, popularityRes, dailyRes, totalRes] = await Promise.all([
+                    fetch('/api/analytics/hourly'),
+                    fetch('/api/analytics/peak'),
+                    fetch('/api/analytics/seat-popularity'),
+                    fetch('/api/analytics/daily'),
+                    fetch('/api/analytics/total-records')
+                ]);
+                
+                const hourlyData = await hourlyRes.json();
+                const peakData = await peakRes.json();
+                const popularityData = await popularityRes.json();
+                const dailyData = await dailyRes.json();
+                const totalData = await totalRes.json();
+                
+                createHourlyChart(hourlyData);
+                createDailyChart(dailyData);
+                createPeakHoursCards(peakData);
+                createPopularityTable(popularityData);
+                
+                document.getElementById('total-records').textContent = totalData.total_records.toLocaleString();
+                
+                if (hourlyData.length > 0) {
+                    const avgOccupancy = hourlyData.reduce((sum, d) => sum + d.occupancy_rate, 0) / hourlyData.length;
+                    document.getElementById('avg-occupancy').textContent = Math.round(avgOccupancy) + '%';
+                    
+                    const minHour = hourlyData.reduce((min, d) => d.occupancy_rate < min.occupancy_rate ? d : min, hourlyData[0]);
+                    document.getElementById('insight-best-time').textContent = 
+                        `Visit around ${minHour.hour}:00 for the best chance of finding a seat (${minHour.occupancy_rate}% occupied).`;
+                }
+                
+                if (peakData.length > 0) {
+                    document.getElementById('peak-hour').textContent = peakData[0].hour_display;
+                    document.getElementById('insight-busiest').textContent = 
+                        `The library is busiest at ${peakData[0].hour_display} with ${peakData[0].occupancy_rate}% occupancy.`;
+                }
+                
+                if (popularityData.length > 0) {
+                    const top = popularityData[0];
+                    document.getElementById('popular-seat').textContent = `C${top.camera_id.slice(-1)} S${top.seat_id}`;
+                }
+                
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+            }
+        }
+        
+        // ==================== Initialize ====================
+        updateFloorPlan();
+        fetchCampusData();
+        setInterval(fetchCampusData, 1500);
+        
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/service-worker.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>
