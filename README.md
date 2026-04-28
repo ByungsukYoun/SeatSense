@@ -4,7 +4,7 @@
 
 SeatSense is a real-time seat monitoring system that detects occupied and available seats across multiple library zones using deep learning. Built as a Final Year Project for BSc Computing Science (Coventry University via PSB Academy, Singapore).
 
-## 📸 Screenshots
+##  Screenshots
 
 ### Dashboard
 ![Dashboard](screenshots/dashboard.png)
