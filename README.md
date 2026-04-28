@@ -82,7 +82,7 @@ Then open your browser:
 - **Dashboard:** http://localhost:5000
 - **Live Feed:** http://localhost:5000/live
 
-## 🔧 Implementation Highlights
+##  Implementation Highlights
 
 ### Per-Seat Hold Logic
 To handle detection flickering on seats with permanent objects (e.g., laptops occasionally missed by YOLO), each seat has its own configurable hold-frame counter that maintains "Occupied" status for N frames after the last detection.
